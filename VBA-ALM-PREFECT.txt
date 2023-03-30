@@ -1,0 +1,273 @@
+Sub GravaSQLRLCompromisso()
+
+
+'Application.Calculation = xlCalculationManual
+'Application.ScreenUpdating = False
+'Application.DisplayAlerts = False
+'Application.DecimalSeparator = ","
+'Application.ThousandsSeparator = "."
+'Application.UseSystemSeparators = False
+
+
+Dim intColPosicao As Integer
+Dim intColMatricula As Integer
+Dim intColCliente As Integer
+Dim intColCompromisso As Integer
+Dim intColLiquidacao As Integer
+Dim intColTitulo As Integer
+Dim intColVencimento As Integer
+Dim intColEmissao As Integer
+Dim intColDataOperacao As Integer
+Dim intColDataCompromisso As Integer
+Dim intColRemuneracao As Integer
+Dim intColQuantidade As Integer
+Dim intColPUOperacao As Integer
+Dim intColValorOperacao As Integer
+Dim intColPUCompromissada As Integer
+Dim intColValorCompromissada As Integer
+
+
+Dim strPosicao As String
+Dim strMatricula As String
+Dim strCliente As String
+Dim strCompromisso As String
+Dim strLiquidacao As String
+Dim strTitulo As String
+Dim dtVencimento As Date
+Dim dtEmissao As Date
+Dim dtDataOperacao As Date
+Dim dtDataCompromisso As Date
+Dim strRemuneracao As String
+Dim dblQuantidade As Double
+Dim dblPUOperacao As Double
+Dim dblValorOperacao As Double
+Dim dblPUCompromissada As Double
+Dim dblValorCompromissada As Double
+
+
+Dim dblTaxa As String
+Dim strIndexador As String
+
+intColPosicao = 1
+intColMatricula = 2
+intColCliente = 3
+intColCompromisso = 4
+intColLiquidacao = 5
+intColTitulo = 6
+intColVencimento = 7
+ntColEmissao = 8
+intColDataOperacao = 9
+intColDataCompromisso = 10
+intColRemuneracao = 11
+intColQuantidade = 12
+intColPUOperacao = 13
+intColValorOperacao = 14
+intColPUCompromissada = 15
+intColValorCompromissada = 16
+
+
+Dim SQLstrPosicao As String
+Dim SQLstrMatricula As String
+Dim SQLstrCliente As String
+Dim SQLstrCompromisso As String
+Dim SQLstrLiquidacao As String
+Dim SQLstrTitulo As String
+Dim SQLstrVencimento As String
+Dim SQLstrEmissao As String
+Dim SQLstrDataOperacao As String
+Dim SQLstrDataCompromisso As String
+Dim SQLstrRemuneracao As String
+Dim SQLstrQuantidade As String
+Dim SQLstrPUOperacao As String
+Dim SQLstrValorOperacao As String
+Dim SQLstrPUCompromissada As String
+Dim SQLstrValorCompromissada As String
+
+Dim SQLdblTaxa As String
+Dim SQLstrIndexador As String
+
+
+'-----------------------------------------
+'Define a data do arquivo
+'-----------------------
+
+DtData = Range("DtRLCOMPROMISSO").Value
+
+'----------------------------------------------
+'Abre Conexão e grava no SQL
+'-------------------------------------------
+
+
+Set cnn = New ADODB.Connection
+
+cnn.Open "Provider=SQLOLEDB;Server=SQL-XP-ALM-DBDNS.xpcorretora.com.br;Initial Catalog=SQL_XP_ALM;Integrated Security=SSPI;MultiSubnetFailover=True;"
+
+Set Cmd1 = New ADODB.Command
+Cmd1.ActiveConnection = cnn
+
+cmd = " DELETE FROM [SQL_XP_ALM].[dbo].[ALM_Estoque_Compromissadas] WHERE Data='" + Format(DtData, "yyyy-mm-dd") + "' AND [Instituicao] = 'CCTVM'"
+Cmd1.CommandText = cmd
+Set Rs = Cmd1.Execute()
+
+i = 2
+
+Do While Cells(i, 1) <> ""
+
+	strPosicao = Cells(i, intColPosicao)
+	strMatricula = Cells(i, intColMatricula)
+	strCliente = Cells(i, intColCliente)
+	strCompromisso = Cells(i, intColCompromisso)
+	strLiquidacao = Cells(i, intColLiquidacao)
+	strTitulo = Cells(i, intColTitulo)
+
+	If InStr(1, strTitulo, "NTN-B", 1) Then
+		strTitulo = "NTN-B"
+	ElseIf InStr(1, strTitulo, "LTN", 1) Then
+		strTitulo = "LTN"
+	ElseIf InStr(1, strTitulo, "LFT", 1) Then
+		strTitulo = "LFT"
+	ElseIf InStr(1, strTitulo, "NTN-F", 1) Then
+		strTitulo = "NTN-F"
+	ElseIf InStr(1, strTitulo, "NTN-C", 1) Then
+		strTitulo = "NTN-C"
+	End If
+
+	dtVencimento = Cells(i, intColVencimento)
+	dtEmissao = Cells(i, intColEmissao)
+	dtDataOperacao = Cells(i, intColDataOperacao)
+	dtDataCompromisso = Cells(i, intColDataCompromisso)
+	strRemuneracao = Cells(i, intColRemuneracao) 
+
+	If InStr(1, strRemuneracao, "CDI", 1) Then
+		dblTaxa = "1"
+		SQLstrTaxa = dblTaxa
+		SQLstrIndexador = "%CDI"
+
+	ElseIf InStr(1, strRemuneracao, "% CDI", 1) Then
+		dblTaxa = Left(strRemuneracao, Len(strRemuneracao) - 5) / 100
+		SQLstrTaxa = Replace(dblTaxa, ",", ".")
+		SQLstrIndexador = "%CDI"
+
+	ElseIf InStr(1, strRemuneracao, "LFT +", 1) Then
+		dblTaxa = Right(strRemuneracao, Len(strRemuneracao) - 6) / 100
+		SQLstrTaxa = Replace(dblTaxa, ",", ".")
+		SQLstrIndexador = "PRE"
+
+	ElseIf InStr(1, strRemuneracao, "% +", 1) Then
+		dblTaxa = Len(Cells(i, intColRemuneracao)) - _
+		Application.WorksheetFunction.Find("+", Cells(i, intColRemuneracao))
+		dblTaxa = Right(Cells(i, intColRemuneracao), dblTaxa)
+		SQLstrTaxa = Replace(dblTaxa, ",", ".")
+		SQLstrIndexador = "PRE"
+	Else
+		SQLstrTaxa = Cells(i, intColRemuneracao)
+		SQLstrTaxa = Replace(SQLstrTaxa, ",", ".")
+		SQLstrIndexador = "PRE"
+	End If
+
+	dblQuantidade = Cells(i, intColQuantidade)
+	dblPUOperacao = Cells(i, intColPUOperacao)
+	dblValorOperacao = Cells(i, intColValorOperacao)
+	dblPUCompromissada = Cells(i, intColPUCompromissada)
+	dblValorCompromissada = Cells(i, intColValorCompromissada)
+
+	SQLstrPosicao = strPosicao
+	SQLstrMatricula = strMatricula
+	SQLstrCliente = strCliente
+	SQLstrCompromisso = strCompromisso
+	SQLstrLiquidacao = strLiquidacao
+	SQLstrTitulo = strTitulo
+	SQLstrVencimento = Format(dtVencimento, "yyyy-mm-dd")
+	SQLstrEmissao = Format(dtEmissao, "yyyy-mm-dd")
+	SQLstrDataOperacao = Format(dtDataOperacao, "yyyy-mm-dd")
+	SQLstrDataCompromisso = Format(dtDataCompromisso, "yyyy-mm-dd")
+	'SQLstrRemuneracao = 
+	SQLstrQuantidade = Replace(dblQuantidade, ",", ".")
+	SQLstrPUOperacao = Replace(dblPUOperacao, ",", ".")
+	SQLstrValorOperacao = Replace(dblValorOperacao, ",", ".")
+	SQLstrPUCompromissada = Replace(dblPUCompromissada, ",", ".")
+	SQLstrValorCompromissada = Replace(dblValorCompromissada, ",", ".")
+
+	cmd = " INSERT INTO [SQL_XP_ALM].[dbo].[ALM_Estoque_Compromissadas] ([Data],[Instituicao],[Posicao],[Matricula],[Cliente]"
+	cmd = cmd + ",[Compromisso],[Liquidacao],[Titulo],[Vencimento],[Emissao],[Data_Operacao],[Data_Compromisso]"
+	cmd = cmd + ",[Taxa],[Indexador],[Quantidade],[PU_Operacao],[Valor_Operacao],[PU_Compromissada],[Valor_Compromissada]) VALUES "
+
+
+		cmd = cmd + " ('" + Format(DtData, "yyyy-mm-dd") + "',"
+		cmd = cmd + "'CCTVM',"
+		cmd = cmd + "'" + SQLstrPosicao + "',"
+		cmd = cmd + "'" + SQLstrMatricula + "',"
+		cmd = cmd + "'" + SQLstrCliente + "',"
+		cmd = cmd + "'" + SQLstrCompromisso + "',"
+		cmd = cmd + "'" + SQLstrLiquidacao + "',"
+		cmd = cmd + "'" + SQLstrTitulo + "',"
+		cmd = cmd + "'" + SQLstrVencimento + "',"
+		cmd = cmd + "'" + SQLstrEmissao + "',"
+		cmd = cmd + "'" + SQLstrDataOperacao + "',"
+		cmd = cmd + "'" + SQLstrDataCompromisso + "',"
+		cmd = cmd + "'" + SQLstrTaxa + "',"
+		cmd = cmd + "'" + SQLstrIndexador + "',"
+		cmd = cmd + "'" + SQLstrQuantidade + "',"
+		cmd = cmd + "'" + SQLstrPUOperacao + "',"
+		cmd = cmd + "'" + SQLstrValorOperacao + "',"
+		cmd = cmd + "'" + SQLstrPUCompromissada + "',"
+		cmd = cmd + "'" + SQLstrValorCompromissada + "')"
+
+	Cmd1.CommandText = cmd
+	Set Rs = Cmd1.Execute()
+	i = i + 1
+Loop
+
+End Sub
+
+
+Sub ImportCSVFile_RLCOMPROMISSO()
+
+Application.Calculation = xlCalculationManual
+Application.ScreenUpdating = False
+Application.DisplayAlerts = False
+Application.DecimalSeparator = "."
+Application.ThousandsSeparator = ","
+Application.UseSystemSeparators = False
+
+Dim filepath As String
+Dim line As String
+Dim arrayOfElements
+Dim linenumber As Integer
+Dim elementnumber As Integer
+Dim element As Variant
+Dim DtData As Date
+
+DtData = Range("DtRLCOMPROMISSO")
+Sheets("Rascunho").Activate
+
+linenumber = 0
+elementnumber = 0
+
+filepath = Range("Path_RLCOMPROMISSO")
+
+Open filepath For Input As #1 ' Open file for input
+	Do While Not EOF(1) ' Loop until end of file
+		linenumber = linenumber + 1
+		Line Input #1, line
+		arrayOfElements = Split(line, ";")
+
+		elementnumber = 0
+		For Each element In arrayOfElements
+			elementnumber = elementnumber + 1
+			If IsNumeric(element) Then element = CDbl(element / 1)
+			If IsDate(element) Then element = CDate(element)
+			Cells(linenumber, elementnumber).Value = element
+		Next
+	Loop
+Close #1 ' Close file.
+
+Call GravaSQLRLCompromisso
+
+Worksheets("Rascunho").Cells.ClearContents
+Sheets("Principal").Activate
+
+Application.Calculation = xlCalculationAutomatic
+
+
+End Sub
